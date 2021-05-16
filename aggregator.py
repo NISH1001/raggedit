@@ -10,7 +10,7 @@ from pprint import pprint
 import praw
 from praw.models import MoreComments
 
-from config import CLIENT_ID, CLIENT_SECRET
+import config
 from validators import SpotifyValidator, StreamType, TrackType, YouTubeValidator
 
 
@@ -95,14 +95,34 @@ def get_comment_urls(submission):
             )
 
     comments = filter(lambda x: x.url is not None, to_add)
-    return comments
+    return list(comments)
+
+
+def get_cfg_value(key):
+    key = key.upper()
+    if key in ["CLIENT_ID", "CLIENT_SECRET"]:
+        if not hasattr(config, key):
+            raise ValueError("config file doesn't have CLIENT_ID or CLIENT_SECRET")
+        elif key == "CLIENT_ID":
+            return config.CLIENT_ID
+        elif key == "CLIENT_SECRET":
+            return config.CLIENT_SECRET
+    if key == "LOOKBACK_DAYS":
+        return 5 if not hasattr(config, key) else config.LOOKBACK_DAYS
+    if key == "LIMIT":
+        return 30 if not hasattr(config, key) else config.LIMIT
+    return None
 
 
 def main():
+    client_id = get_cfg_value("CLIENT_ID")
+    client_secret = get_cfg_value("CLIENT_SECRET")
+    lookback_days = get_cfg_value("LOOKBACK_DAYS")
+    limit = get_cfg_value("LIMIT")
 
     reddit = praw.Reddit(
-        client_id=CLIENT_ID,
-        client_secret=CLIENT_SECRET,
+        client_id=client_id,
+        client_secret=client_secret,
         redirect_uri="http://localhost:8000",
         user_agent="testscript by u/fakebot3",
     )
@@ -111,13 +131,15 @@ def main():
     today = time.time()
     week = today - (60 * 60 * 24 * 2)
 
-    lookback_days = datetime.utcnow() - timedelta(days=5)
+    print(f"LOOKBACK_DAYS = {lookback_days}")
+    lookback_days = datetime.utcnow() - timedelta(days=lookback_days)
     print(f"Fetching links from date: {lookback_days}")
 
     subr = reddit.subreddit("connectedbymusicNEPAL")
     # subr = reddit.subreddit("NepaliMusic")
 
-    submissions = subr.hot(limit=10)
+    print(f"Submission limit = {limit}")
+    submissions = subr.hot(limit=limit)
     submissions = filter(
         lambda s: datetime.utcfromtimestamp(s.created_utc) >= lookback_days, submissions
     )
@@ -146,6 +168,13 @@ def main():
     post_urls = list(post_urls)
     print(f"After validation, URLs extracted from post: {len(post_urls)}")
     print(post_urls)
+
+    print(f"Total URLs extracted from comments: {len(comment_urls)}")
+    comment_urls = map(lambda url: (induce_type(url), url), comment_urls)
+    comment_urls = filter(lambda url: url[0] is not None, comment_urls)
+    comment_urls = list(comment_urls)
+    print(f"After validation, URLs extracted from comments: {len(comment_urls)}")
+    print(comment_urls)
 
 
 if __name__ == "__main__":
