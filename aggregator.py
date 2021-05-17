@@ -10,7 +10,6 @@ from pprint import pprint
 import praw
 from praw.models import MoreComments
 
-import config
 from validators import SpotifyValidator, StreamType, TrackType, YouTubeValidator
 
 
@@ -99,6 +98,8 @@ def get_comment_urls(submission):
 
 
 def get_cfg_value(key):
+    import config
+
     key = key.upper()
     if key in ["CLIENT_ID", "CLIENT_SECRET"]:
         if not hasattr(config, key):

@@ -1,6 +1,8 @@
 # raggedit
 Aggregate music streaming site links from any sub-reddit (including post content and all the comments).
 
+For now it aggregates YouTube/Spotify links including single track, playlist and album.
+
 ## Configuration
 
 You should have `config.py` with following variables/values:
